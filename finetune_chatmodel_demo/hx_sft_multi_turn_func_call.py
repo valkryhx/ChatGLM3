@@ -637,28 +637,11 @@ def train(global_args):
     # 这三个都是 transformers 模型的函数/参数(见 transformers/modeling_utils.py 文件)
     #
     
-    model.gradient_checkpointing_enable() 
-    # note: use gradient checkpointing to save memory at the expense of slower backward pass.
-    model.enable_input_require_grads()
-    # note: Enables the gradients for the input embeddings. This is useful for fine-tuning adapter weights while keeping the model weights fixed. 
-    # See https://github.com/huggingface/transformers/blob/ee88ae59940fd4b2c8fc119373143d7a1175c651/src/transformers/modeling_utils.py#L1190
-
+    
 
     # STEP 4 : 将model转化为peftModel 准备loRA微调
     logger.info("prepare_model_for_kbit_training...")
     model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
-
-    ### STEP 2 定义 data collator 移到model定义之后
-    #very_clear_data_collator = DataCollatorForChatGLM(pad_token_id=tokenizer.pad_token_id,max_length=global_args.max_length)
-    # Data collator
-    data_collator = DataCollatorForSeq2Seq(
-        tokenizer,
-        model=model,
-        label_pad_token_id=-100,
-        pad_to_multiple_of=None,
-        padding=False
-    ) 
-  
     # LoRA
     #target_modules = TRANSFORMERS_MODELS_TO_LORA_TARGET_MODULES_MAPPING['chatglm']
     target_modules = find_all_linear_names(model)
@@ -672,8 +655,21 @@ def train(global_args):
         task_type=TaskType.CAUSAL_LM
     )
     model = get_peft_model(model, lora_config)
+    
+    #model.gradient_checkpointing_enable()  # chatglm3-6b貌似默认就是enable 写了这句反而报错如下
+    ## chatglm3-6b 
+    ## File "/opt/conda/lib/python3.10/site-packages/transformers/modeling_utils.py", line 1872, in gradient_checkpointing_enable
+    ##   self._set_gradient_checkpointing(enable=True, gradient_checkpointing_func=gradient_checkpointing_func)
+    ## TypeError: ChatGLMPreTrainedModel._set_gradient_checkpointing() got an unexpected keyword argument 'enable'
+    # note: use gradient checkpointing to save memory at the expense of slower backward pass.
+    
+    model.enable_input_require_grads()   
+    # note: Enables the gradients for the input embeddings. This is useful for fine-tuning adapter weights while keeping the model weights fixed. 
+    # See https://github.com/huggingface/transformers/blob/ee88ae59940fd4b2c8fc119373143d7a1175c651/src/transformers/modeling_utils.py#L1190
+    model.is_parallelizable = True
+    model.model_parallel = True  # 可以尝试暂时关闭模型并行化来看是否解决问题
     model.lm_head = CastOutputToFloat(model.transformer.output_layer) # copy from basemodel finetune 代码 估计是以后用到lm_head的场景用的
-
+    model.config.use_cache = False
     resume_from_checkpoint = global_args.resume_from_checkpoint
     if resume_from_checkpoint is not None:
         checkpoint_name = os.path.join(resume_from_checkpoint, 'pytorch_model.bin')
@@ -698,6 +694,17 @@ def train(global_args):
     print(hf_train_args)
     # raise ValueError("TEST")
     
+    ### STEP 2 定义 data collator 移到lora peft model定义之后
+    #very_clear_data_collator = DataCollatorForChatGLM(pad_token_id=tokenizer.pad_token_id,max_length=global_args.max_length)
+    # Data collator
+    data_collator = DataCollatorForSeq2Seq(
+        tokenizer,
+        model=model,
+        label_pad_token_id=-100,
+        pad_to_multiple_of=None,
+        padding=False
+    ) 
+
     ### STEP  5   train
     trainer = LoRATrainer(
         model=model,
