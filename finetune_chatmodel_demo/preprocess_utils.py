@@ -95,6 +95,7 @@ class MultiTurnDataset(Dataset):
 
         # labels are used inside the model
         #target_based_loss_mask = [False] + loss_masks[:-1]   ##这里为何整体向后位移loss_mask?
+        print("修改了 target_based_loss_mask")
         target_base_loss_mask = loss_masks
         labels = [(t if m else -100) for t, m in zip(tokens, target_based_loss_mask)]
 
