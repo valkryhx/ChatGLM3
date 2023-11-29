@@ -672,8 +672,8 @@ def train(global_args):
     model.enable_input_require_grads()   
     # note: Enables the gradients for the input embeddings. This is useful for fine-tuning adapter weights while keeping the model weights fixed. 
     # See https://github.com/huggingface/transformers/blob/ee88ae59940fd4b2c8fc119373143d7a1175c651/src/transformers/modeling_utils.py#L1190
-    model.is_parallelizable = True
-    model.model_parallel = True  # 可以尝试暂时关闭模型并行化来看是否解决问题
+    model.is_parallelizable = False
+    model.model_parallel = False  # 可以尝试暂时关闭模型并行化来看是否解决问题
     model.lm_head = CastOutputToFloat(model.transformer.output_layer) # copy from basemodel finetune 代码 估计是以后用到lm_head的场景用的
     model.config.use_cache = False
     resume_from_checkpoint = global_args.resume_from_checkpoint
