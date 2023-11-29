@@ -570,18 +570,10 @@ def train(global_args):
             tokenizer,
             global_args.max_length,
         )
-  
+
+    sanity_check(eval_dataset[0]['input_ids'], eval_dataset[0]['labels'], tokenizer)
     
-    ### STEP 2 定义 data collator
-    #very_clear_data_collator = DataCollatorForChatGLM(pad_token_id=tokenizer.pad_token_id,max_length=global_args.max_length)
-    # Data collator
-    data_collator = DataCollatorForSeq2Seq(
-        tokenizer,
-        model=model,
-        label_pad_token_id=-100,
-        pad_to_multiple_of=None,
-        padding=False
-    ) 
+    
 
 
     ### STEP 3  load model
@@ -655,7 +647,18 @@ def train(global_args):
     # STEP 4 : 将model转化为peftModel 准备loRA微调
     logger.info("prepare_model_for_kbit_training...")
     model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
-    
+
+    ### STEP 2 定义 data collator 移到model定义之后
+    #very_clear_data_collator = DataCollatorForChatGLM(pad_token_id=tokenizer.pad_token_id,max_length=global_args.max_length)
+    # Data collator
+    data_collator = DataCollatorForSeq2Seq(
+        tokenizer,
+        model=model,
+        label_pad_token_id=-100,
+        pad_to_multiple_of=None,
+        padding=False
+    ) 
+  
     # LoRA
     #target_modules = TRANSFORMERS_MODELS_TO_LORA_TARGET_MODULES_MAPPING['chatglm']
     target_modules = find_all_linear_names(model)
