@@ -722,6 +722,7 @@ def train(global_args):
     )
 
     trainer.train(resume_from_checkpoint=resume_from_checkpoint)
+    trainer.train()
     trainer.model.save_pretrained(hf_train_args.output_dir)
 
 
