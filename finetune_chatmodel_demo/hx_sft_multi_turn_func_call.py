@@ -640,8 +640,14 @@ def train(global_args):
     
 
     # STEP 4 : 将model转化为peftModel 准备loRA微调
-    logger.info("prepare_model_for_kbit_training...")
-    model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
+    #logger.info("prepare_model_for_kbit_training...")
+    #model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
+    # chatglm3-6b貌似默认就是enable 写了这句反而报错如下
+    ## chatglm3-6b 
+    ## File "/opt/conda/lib/python3.10/site-packages/transformers/modeling_utils.py", line 1872, in gradient_checkpointing_enable
+    ##   self._set_gradient_checkpointing(enable=True, gradient_checkpointing_func=gradient_checkpointing_func)
+    ## TypeError: ChatGLMPreTrainedModel._set_gradient_checkpointing() got an unexpected keyword argument 'enable'
+    
     # LoRA
     #target_modules = TRANSFORMERS_MODELS_TO_LORA_TARGET_MODULES_MAPPING['chatglm']
     target_modules = find_all_linear_names(model)
