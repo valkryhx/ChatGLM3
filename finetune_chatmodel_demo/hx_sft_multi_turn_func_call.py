@@ -711,12 +711,13 @@ def train(global_args):
         padding=False
     ) 
 
-    ### STEP  5   train
+    ### STEP  5   train   根据https://github.com/THUDM/ChatGLM3/issues/376#issuecomment-1831272372  目前没有eval数据 
+    ###而且base model的lora sft的trainer中也没有eval_dataset https://github.com/valkryhx/ChatGLM3/blob/new11/finetune_basemodel_demo/finetune.py#L147
     trainer = LoRATrainer(
         model=model,
         args=hf_train_args,
         train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
+        #eval_dataset=eval_dataset,
         data_collator = data_collator #20231129 #very_clear_data_collator , #modify 不使用这个collator 试试 20230804
     )
 
