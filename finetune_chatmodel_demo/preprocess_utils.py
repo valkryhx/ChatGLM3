@@ -94,7 +94,8 @@ class MultiTurnDataset(Dataset):
         tokens, loss_masks = format_conversation(data_item, self.tokenizer, CONVERSATOIN_KEY, TOOL_DESC_KEY)
 
         # labels are used inside the model
-        target_based_loss_mask = [False] + loss_masks[:-1]
+        #target_based_loss_mask = [False] + loss_masks[:-1]   ##这里为何整体向后位移loss_mask?
+        target_base_loss_mask = loss_masks
         labels = [(t if m else -100) for t, m in zip(tokens, target_based_loss_mask)]
 
         tokens = tokens[:self.max_seq_length]
