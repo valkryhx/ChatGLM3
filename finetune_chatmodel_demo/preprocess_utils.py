@@ -69,7 +69,7 @@ def format_conversation(item, tokenizer, conversation_key: str, tool_key: str):
     return tokens, loss_masks
 
 def sanity_check(tokens: List[int], target: List[int], tokenizer: PreTrainedTokenizer):
-    print("修改了 Sanity Check >>>>>>>>>>>>>")
+    print("原本的Sanity Check >>>>>>>>>>>>>")
     for t, m in zip(tokens, target):
         decoded =  tokenizer.tokenizer.index_special_tokens[t] \
             if t in tokenizer.tokenizer.index_special_tokens \
@@ -94,9 +94,15 @@ class MultiTurnDataset(Dataset):
         tokens, loss_masks = format_conversation(data_item, self.tokenizer, CONVERSATOIN_KEY, TOOL_DESC_KEY)
 
         # labels are used inside the model
-        #target_based_loss_mask = [False] + loss_masks[:-1]   ##这里为何整体向后位移loss_mask?
-        print("修改了 target_based_loss_mask")
-        target_based_loss_mask = loss_masks
+        target_based_loss_mask = [False] + loss_masks[:-1]   
+        ##这里为何整体向后位移loss_mask? 我尝试了下列不后移的代码 这样会导致
+        ##第一个'<|assistant|>':  64796 ->  64796（原后移结果为-100） 
+        ## 中间的'<|assistant|>':  64796 ->  64796（原先也是64796）
+        ## '<|observation|>':  64797 ->   -100（原先是64796）
+        ## '<|assistant|>':  64796 ->  64796(原后移结果为-100)
+        ## 感觉后移的目的是让模型输出<|observation|> 这个token ，而对于<|assistant|> 理论上都应该是-100 毕竟这是人工指定的模型方标记，不是模型本身输出的token
+        #print("修改了 target_based_loss_mask")
+        #target_based_loss_mask = loss_masks
         labels = [(t if m else -100) for t, m in zip(tokens, target_based_loss_mask)]
 
         tokens = tokens[:self.max_seq_length]
