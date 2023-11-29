@@ -532,9 +532,9 @@ def train(global_args):
     #                                                      max_samples=global_args.num_train_samples,global_args=global_args)
 
     with open(global_args.train_data_path, "r", encoding="utf-8") as f:
-        if global_args.train_file.endswith(".json"):
+        if global_args.train_data_path.endswith(".json"):
             train_data_all = json.load(f)
-        elif global_args.train_file.endswith(".jsonl"):
+        elif global_args.train_data_path.endswith(".jsonl"):
             train_data_all = [json.loads(line) for line in f]
     
     """ 
